@@ -1,4 +1,4 @@
-# zload - zsh plugin to load functions.
+# zload - zsh plugin to load functions as an autoloading function.
 #
 # Copyright (c) 2014 Hideaki Miyake
 # Licensed under the MIT License (MIT)
@@ -24,10 +24,18 @@ function _zload_print_usage()
     cat << EOF
 Usage: $SCRIPT_NAME [-a|-d] FILE...
 $SCRIPT_NAME is a command to load files as an autoloading function.
+Use this command to load autoloading functions or zsh completion functions.
+When -a option is specified, from then on come to reload functions automatically
+in current directory.
 
   -a                 enable auto reload
   -d                 disable auto reload
   -h                 display this help and exit
+
+Examples:
+  $SCRIPT_NAME myfunc _myfunc    Load myfunc and _myfunc.
+  $SCRIPT_NAME -a myfunc         Load myfunc and enable auto reload
+  $SCRIPT_NAME -a                Enable auto reload.
 EOF
 }
 
