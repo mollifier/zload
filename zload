@@ -1,0 +1,168 @@
+# zload - zsh plugin to load functions.
+#
+# Copyright (c) 2014 Hideaki Miyake
+# Licensed under the MIT License (MIT)
+#
+# Author : Hideaki Miyake (https://github.com/mollifier)
+# URL : https://github.com/mollifier/zload
+#
+# How to set up
+#   Put zload and _zload files somewhere in your $fpath
+#   and add this line to your .zshrc:
+#
+#     autoload -Uz zload
+#
+# Usage: zload [-a|-d] FILE...
+#
+
+emulate -L zsh
+
+typeset -r SCRIPT_NAME="zload"
+
+function _zload_print_usage()
+{
+    cat << EOF
+Usage: $SCRIPT_NAME [-a|-d] FILE...
+$SCRIPT_NAME is a command to load files as an autoloading function.
+
+  -a                 enable auto reload
+  -d                 disable auto reload
+  -h                 display this help and exit
+EOF
+}
+
+function _zload_print_error()
+{
+    echo "$SCRIPT_NAME: $@" 1>&2
+    echo "Try \`-h' option for more information." 1>&2
+}
+
+# load specified files as an autoloading function
+function _zload_load_files()
+{
+  local file function_path function_name
+  for file in "$@"; do
+    if [[ -z "$file" ]]; then
+      continue
+    fi
+
+    function_path="${file:h}"
+    function_name="${file:t}"
+
+    if (( $+functions[$function_name] )) ; then
+      # "function_name" is defined
+      unfunction "$function_name"
+    fi
+    FPATH="$function_path" autoload -Uz +X -- "$function_name"
+
+    if [[ "$function_name" == _* ]]; then
+      # "function_name" is a completion script
+
+      # fpath requires absolute path
+      # convert relative path to absolute path with :a modifier
+      fpath=("${function_path:a}" $fpath) compinit
+    fi
+  done
+}
+
+# reload autoloading functions which are already defined
+function _zload_reload_files()
+{
+  local file function_path function_name
+  for file in "$@"; do
+    if [[ -z "$file" ]]; then
+      continue
+    fi
+
+    function_path="${file:h}"
+    function_name="${file:t}"
+
+    if (( $+functions[$function_name] )) ; then
+      # "function_name" is defined
+      unfunction "$function_name"
+      FPATH="$function_path" autoload -Uz +X -- "$function_name"
+    fi
+  done
+}
+
+function _zload_auto_reload_hook()
+{
+  # reload functions in current directory automatically
+  [[ -n "$_ZLOAD_RELOAD_TARGET_DIRECTORY" ]] \
+    && [[ "$_ZLOAD_RELOAD_TARGET_DIRECTORY" == "$PWD" ]] \
+    && _zload_reload_files $PWD/*(N-.)
+}
+
+function _zload_enable_auto_load()
+{
+  _ZLOAD_RELOAD_TARGET_DIRECTORY=$PWD
+  autoload -Uz add-zsh-hook
+  add-zsh-hook preexec _zload_auto_reload_hook
+}
+
+function _zload_disable_auto_load()
+{
+  _ZLOAD_RELOAD_TARGET_DIRECTORY=""
+  autoload -Uz add-zsh-hook
+  add-zsh-hook -d preexec _zload_auto_reload_hook
+}
+
+# main function
+function _zload_main()
+{
+  # 'enable' or 'disable'
+  local autoreload_mode=""
+
+  local option OPTARG OPTIND
+  while getopts ':adh' option; do
+    case $option in
+      a)
+        autoreload_mode="enable"
+        ;;
+      d)
+        autoreload_mode="disable"
+        ;;
+      h)
+        _zload_print_usage
+        return 0
+        ;;
+      :)
+        _zload_print_error "option requires an argument -- $OPTARG"
+        return 1
+        ;;
+      *)
+        _zload_print_error "invalid option -- $OPTARG"
+        return 1
+        ;;
+    esac
+  done
+  shift $(expr $OPTIND - 1)
+
+  if [[ "$autoreload_mode" == "enable" ]]; then
+    _zload_enable_auto_load
+  elif [[ "$autoreload_mode" == "disable" ]]; then
+    _zload_disable_auto_load
+  fi
+
+  if [[ "${#}" -le 0 ]]; then
+    if [[ -n "$autoreload_mode" ]]; then
+      return 0
+    else
+      _zload_print_error 'you must specify filename'
+      return 1
+    fi
+  fi
+
+  _zload_load_files "$@"
+}
+
+_zload_main "$@"
+
+# Local Variables:
+# mode: Shell-Script
+# sh-indentation: 2
+# indent-tabs-mode: nil
+# sh-basic-offset: 2
+# End:
+# vim: ft=zsh sw=2 ts=2 et
+
