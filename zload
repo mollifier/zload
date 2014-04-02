@@ -19,14 +19,18 @@ emulate -L zsh
 
 typeset -r SCRIPT_NAME="zload"
 
+# global variables
+if (( ! ${+_zload_loaded_function_path_list} )) ; then
+  _zload_loaded_function_path_list=()
+fi
+
 function _zload_print_usage()
 {
     cat << EOF
 Usage: $SCRIPT_NAME [-a|-d] FILE...
-$SCRIPT_NAME is a command to load files as an autoloading function.
-Use this command to load autoloading functions or zsh completion functions.
-When -a option is specified, from then on come to reload functions automatically
-in current directory.
+Load files as an autoloading function.
+$SCRIPT_NAME can load autoloading functions or zsh completion functions.
+When -a option is specified, from then on come to reload functions automatically.
 
   -a                 enable auto reload
   -d                 disable auto reload
@@ -36,6 +40,7 @@ Examples:
   $SCRIPT_NAME myfunc _myfunc    Load myfunc and _myfunc.
   $SCRIPT_NAME -a myfunc         Load myfunc and enable auto reload
   $SCRIPT_NAME -a                Enable auto reload.
+  $SCRIPT_NAME -d                Disable auto reload.
 EOF
 }
 
@@ -59,7 +64,7 @@ function _zload_load_files()
 
     if (( $+functions[$function_name] )) ; then
       # "function_name" is defined
-      unfunction "$function_name"
+      unfunction -- "$function_name"
     fi
     FPATH="$function_path" autoload -Uz +X -- "$function_name"
 
@@ -70,6 +75,14 @@ function _zload_load_files()
       # convert relative path to absolute path with :a modifier
       fpath=("${function_path:a}" $fpath) compinit
     fi
+
+    # store file fullpath even if zload auto reloading is disabled
+    local file_fullpath="${file:a}"
+    if (( ${_zload_loaded_function_path_list[(I)$file_fullpath]} == 0 )); then
+      # $file_fullpath isn't stored yet
+      _zload_loaded_function_path_list=($_zload_loaded_function_path_list "$file_fullpath")
+    fi
+
   done
 }
 
@@ -87,7 +100,7 @@ function _zload_reload_files()
 
     if (( $+functions[$function_name] )) ; then
       # "function_name" is defined
-      unfunction "$function_name"
+      unfunction -- "$function_name"
       FPATH="$function_path" autoload -Uz +X -- "$function_name"
     fi
   done
@@ -95,24 +108,36 @@ function _zload_reload_files()
 
 function _zload_auto_reload_hook()
 {
-  # reload functions in current directory automatically
-  [[ -n "$_ZLOAD_RELOAD_TARGET_DIRECTORY" ]] \
-    && [[ "$_ZLOAD_RELOAD_TARGET_DIRECTORY" == "$PWD" ]] \
-    && _zload_reload_files $PWD/*(N-.)
+  # reload functions automatically
+  if (( ${#_zload_loaded_function_path_list} )); then
+    _zload_reload_files $_zload_loaded_function_path_list
+  fi
 }
 
 function _zload_enable_auto_load()
 {
-  _ZLOAD_RELOAD_TARGET_DIRECTORY=$PWD
-  autoload -Uz add-zsh-hook
-  add-zsh-hook preexec _zload_auto_reload_hook
+  # add _zload_auto_reload_hook to preexec_functions array
+  if (( ! ${+preexec_functions} )); then
+    preexec_functions=()
+  fi
+
+  if (( ${preexec_functions[(I)_zload_auto_reload_hook]} == 0 )); then
+    # array dosen't contain _zload_auto_reload_hook function
+    preexec_functions=($preexec_functions _zload_auto_reload_hook)
+  fi
 }
 
 function _zload_disable_auto_load()
 {
-  _ZLOAD_RELOAD_TARGET_DIRECTORY=""
-  autoload -Uz add-zsh-hook
-  add-zsh-hook -d preexec _zload_auto_reload_hook
+  # remove _zload_auto_reload_hook from preexec_functions array
+  if (( ${+preexec_functions} )); then
+    preexec_functions=(${preexec_functions:#_zload_auto_reload_hook})
+  fi
+
+  # unset preexec_functions if it is empty
+  if (( ! ${#preexec_functions} )); then
+    unset preexec_functions
+  fi
 }
 
 # main function

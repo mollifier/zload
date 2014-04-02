@@ -19,7 +19,7 @@ autoload -Uz zload
 Load <var>FILEs</var> as an autoloading function.
 zload can load autoloading function or zsh completion files as input file
 
-When -a option is specified, from then on come to reload functions automatically in current directory. -d option stops this feature.
+When -a option is specified, from then on come to reload functions automatically. -d option stops this feature.
 
 ## Options
 * `-a` enable auto reload
@@ -32,8 +32,19 @@ When -a option is specified, from then on come to reload functions automatically
 # Load myfunc and _myfunc.
 % zload myfunc _myfunc
 
-# Load myfunc and enable auto reload.
+# Now we can call myfunc even if it isn't in fpath.
+% myfunc
+
+# Load myfunc again and enable auto reload.
 % zload -a myfunc
+
+# edit myfunc
+# ...
+# Changes are applied immediately if auto reload is enabled.
+% myfunc
+
+# Disable auto reload.
+% zload -d
 
 # Enable auto reload.
 % zload -a
