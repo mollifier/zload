@@ -4,10 +4,20 @@
 zsh plugin to load functions as an autoloading function.
 
 ## How to set up
-Put zload and _zload files somewhere in your $fpath and add this line to your .zshrc:
+
+### Manually install
+
+Put zload and _zload files somewhere in your $fpath and add the following line to your .zshrc:
 
 ```
 autoload -Uz zload
+```
+
+### Installing using Antigen
+If you use [Antigen](https://github.com/zsh-users/antigen), add the following line to your .zshrc:
+
+```
+antigen bundle mollifier/zload
 ```
 
 ## Usage
