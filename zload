@@ -59,6 +59,15 @@ function _zload_load_files()
       continue
     fi
 
+    if [[ -d "${file:A}" ]]; then
+      echo "$SCRIPT_NAME: $file: Is a directory" 1>&2
+      continue
+    fi
+    if [[ ! -f "${file:A}" ]]; then
+      echo "$SCRIPT_NAME: $file: No such file" 1>&2
+      continue
+    fi
+
     function_path="${file:h}"
     function_name="${file:t}"
 
@@ -91,8 +100,16 @@ function _zload_reload_files()
 {
   local file function_path function_name
   for file in "$@"; do
+    local file_found=1 # file found
     if [[ -z "$file" ]]; then
-      continue
+      file_found=0
+    fi
+
+    if [[ -d "${file:A}" ]]; then
+      file_found=0
+    fi
+    if [[ ! -f "${file:A}" ]]; then
+      file_found=0
     fi
 
     function_path="${file:h}"
@@ -101,7 +118,10 @@ function _zload_reload_files()
     if (( $+functions[$function_name] )) ; then
       # "function_name" is defined
       unfunction -- "$function_name"
-      FPATH="$function_path" autoload -Uz +X -- "$function_name"
+
+      if [[ "$file_found" == "1" ]]; then
+        FPATH="$function_path" autoload -Uz +X -- "$function_name"
+      fi
     fi
   done
 }
