@@ -136,27 +136,27 @@ function _zload_auto_reload_hook()
 
 function _zload_enable_auto_load()
 {
-  # add _zload_auto_reload_hook to preexec_functions array
-  if (( ! ${+preexec_functions} )); then
-    preexec_functions=()
+  # add _zload_auto_reload_hook to precmd_functions array
+  if (( ! ${+precmd_functions} )); then
+    precmd_functions=()
   fi
 
-  if (( ${preexec_functions[(I)_zload_auto_reload_hook]} == 0 )); then
+  if (( ${precmd_functions[(I)_zload_auto_reload_hook]} == 0 )); then
     # array dosen't contain _zload_auto_reload_hook function
-    preexec_functions=($preexec_functions _zload_auto_reload_hook)
+    precmd_functions=($precmd_functions _zload_auto_reload_hook)
   fi
 }
 
 function _zload_disable_auto_load()
 {
-  # remove _zload_auto_reload_hook from preexec_functions array
-  if (( ${+preexec_functions} )); then
-    preexec_functions=(${preexec_functions:#_zload_auto_reload_hook})
+  # remove _zload_auto_reload_hook from precmd_functions array
+  if (( ${+precmd_functions} )); then
+    precmd_functions=(${precmd_functions:#_zload_auto_reload_hook})
   fi
 
-  # unset preexec_functions if it is empty
-  if (( ! ${#preexec_functions} )); then
-    unset preexec_functions
+  # unset precmd_functions if it is empty
+  if (( ! ${#precmd_functions} )); then
+    unset precmd_functions
   fi
 }
 
