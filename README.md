@@ -13,6 +13,22 @@ Put zload and _zload files somewhere in your $fpath and add the following line t
 autoload -Uz zload
 ```
 
+#### For example
+
+```
+# download all files
+% cd /path/to/dir
+% git clone https://github.com/mollifier/zload.git
+```
+
+And add the following lines to your .zshrc:
+
+```
+fpath=(/path/to/dir/zload(N-/) $fpath)
+
+autoload -Uz zload
+```
+
 ### Installing using Antigen
 If you use [Antigen](https://github.com/zsh-users/antigen), add the following line to your .zshrc:
 
